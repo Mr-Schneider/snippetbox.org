@@ -1,9 +1,12 @@
 package main
 
 import (
+	"database/sql"
 	"flag"
 	"log"
 	"net/http"
+	"snippetbox.org/pkg/models"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func main() {
@@ -11,25 +14,19 @@ func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	htmlDir := flag.String("html-dir", "./ui/html", "Path to HTML templates")
 	staticDir := flag.String("static-dir", "./ui/static", "Path to static assets")
+	dsn := flag.String("dsn", "sbx:redpong13@/snippetbox?parseTime=true", "MySQL DSN")
 
 	flag.Parse()
+
+	// Database connection
+	db := connect(*dsn)
+	defer db.Close()
 
 	app := &App{
 		HTMLDir: *htmlDir,
 		StaticDir: *staticDir,
+		Database: &models.Database{db},
 	}
-
-	// Initalize server mux
-	mux := http.NewServeMux()
-
-	// Paths
-	mux.HandleFunc("/", app.Home)
-	mux.HandleFunc("/snippet", app.ShowSnippet)
-	mux.HandleFunc("/snippet/new", app.NewSnippet)
-
-	// File server for html assets
-	fileServer := http.FileServer(http.Dir(*staticDir))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
 
 	//Start server, quit on failure
 	log.Printf("Starting server on %s", *addr)
@@ -37,4 +34,14 @@ func main() {
 	log.Fatal(err)
 }
 
+func connect(dsn string) *sql.DB {
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := db.Ping(); err != nil {
+		log.Fatal(err)
+	}
 
+	return db
+}
