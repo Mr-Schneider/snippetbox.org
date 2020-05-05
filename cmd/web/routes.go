@@ -9,6 +9,8 @@ func (app *App) Routes() *http.ServeMux {
 	mux.HandleFunc("/", app.Home)
 	mux.HandleFunc("/snippet", app.ShowSnippet)
 	mux.HandleFunc("/snippet/new", app.NewSnippet)
+	mux.HandleFunc("/snippet/add", app.CreateSnippet)
+	
 
 	fileServer := http.FileServer(http.Dir(app.StaticDir))
 	mux.Handle("/static/", http.StripPrefix("/static", fileServer))

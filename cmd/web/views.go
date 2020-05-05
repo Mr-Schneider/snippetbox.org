@@ -13,6 +13,7 @@ type HTMLData struct {
 	Snippet 	*models.Snippet
 	Snippets 	[]*models.Snippet
 	Path 		string
+	Form		interface{}
 }
 
 func humanDate(t time.Time) string {

@@ -1,8 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
+	"snippetbox.org/pkg/forms"
 )
 
 func (app *App) Home(w http.ResponseWriter, r *http.Request) {
@@ -53,5 +55,39 @@ func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
 }
 
 func (app *App) NewSnippet(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Display the new snippet form..."))
+	app.RenderHTML(w, r, "new.page.html", &HTMLData{
+		Form : &forms.NewSnippet{},
+	})
+	//w.Write([]byte("Display the new snippet form..."))
+}
+
+func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
+	// Parse the post data
+	err := r.ParseForm()
+	if err != nil {
+		app.ClientError(w, http.StatusBadRequest)
+		return
+	}
+
+	form := &forms.NewSnippet{
+		Title: r.PostForm.Get("title"),
+		Content: r.PostForm.Get("content"),
+		Expires: r.PostForm.Get("expires"),
+	}
+
+	// Validate form
+	if !form.Valid() {
+		app.RenderHTML(w, r, "new.page.html", &HTMLData{Form: form})
+		return
+	}
+
+	// Insert the new snippet
+	id, err := app.Database.InsertSnippet(form.Title, form.Content, form.Expires)
+	if err != nil {
+		app.ServerError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
+	w.Write([]byte("Create a new snippet..."))
 }
