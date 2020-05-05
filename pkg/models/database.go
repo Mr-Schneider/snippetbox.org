@@ -17,6 +17,7 @@ func (db *Database) GetSnippet(id int) (*Snippet, error) {
 	row := db.QueryRow(stmt, id)
 	s := &Snippet{}
 
+	// Pull data into snippet
 	err := row.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -42,9 +43,11 @@ func (db *Database) LatestSnippets() (Snippets, error) {
 
 	snippets := Snippets{}
 
+	// Get all the matching snippets
 	for rows.Next() {
 		s := &Snippet{}
 
+		// Pull data into snippet
 		err := rows.Scan(&s.ID, &s.Title, &s.Content, &s.Created, &s.Expires)
 		if err != nil {
 			return nil, err
