@@ -14,6 +14,7 @@ type HTMLData struct {
 	Snippets 	[]*models.Snippet
 	Path 		string
 	Form		interface{}
+	Flash		string
 }
 
 func humanDate(t time.Time) string {

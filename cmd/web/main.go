@@ -5,9 +5,15 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"time"
+
 	"snippetbox.org/pkg/models"
+
+	"github.com/alexedwards/scs"
 	_ "github.com/go-sql-driver/mysql"
 )
+
+var sessionManager *scs.SessionManager
 
 func main() {
 	// Flags
@@ -22,15 +28,21 @@ func main() {
 	db := connect(*dsn)
 	defer db.Close()
 
+	// Initalize session manager
+	sessionManager = scs.New()
+	sessionManager.Lifetime = 6 * time.Hour
+	//sessionManager.Persist(true)
+
 	app := &App{
 		HTMLDir: *htmlDir,
 		StaticDir: *staticDir,
 		Database: &models.Database{db},
+		Sessions: sessionManager,
 	}
 
 	//Start server, quit on failure
 	log.Printf("Starting server on %s", *addr)
-	err := http.ListenAndServe(*addr, app.Routes())
+	err := http.ListenAndServe(*addr, sessionManager.LoadAndSave(app.Routes()))
 	log.Fatal(err)
 }
 

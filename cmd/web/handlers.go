@@ -46,9 +46,13 @@ func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check for messages
+	flash := app.Sessions.PopString(r.Context(), "flash")
+
 	// Return requested snippet
 	app.RenderHTML(w, r, "show.page.html", &HTMLData{
 		Snippet: snippet,
+		Flash: flash,
 	})
 	//fmt.Fprint(w, snippet)
 	//w.Write([]byte("Display a specific snippet..."))
@@ -88,6 +92,9 @@ func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save success message
+	app.Sessions.Put(r.Context(), "flash", "Your snippet was saved successfully!")
+
 	http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
-	w.Write([]byte("Create a new snippet..."))
+	//w.Write([]byte("Create a new snippet..."))
 }
