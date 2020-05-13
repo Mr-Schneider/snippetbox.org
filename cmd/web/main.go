@@ -42,7 +42,8 @@ func main() {
 
 	//Start server, quit on failure
 	log.Printf("Starting server on %s", *addr)
-	err := http.ListenAndServe(*addr, sessionManager.LoadAndSave(app.Routes()))
+
+	err := http.ListenAndServe(*addr, LogRequest(SecureHeaders(sessionManager.LoadAndSave(app.Routes()))))
 	log.Fatal(err)
 }
 
