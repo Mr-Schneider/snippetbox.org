@@ -11,7 +11,7 @@ type Database struct {
 func (db *Database) GetSnippet(id int) (*Snippet, error) {
 	// Query statement
 	stmt := `SELECT id, title, content, created, expires FROM snippets
-	WHERE expires > UTC_TIMESTAMP() AND id = ?`
+	WHERE expires > timezone('utc', now()) AND id = $1`
 
 	// Execute query
 	row := db.QueryRow(stmt, id)
@@ -31,7 +31,7 @@ func (db *Database) GetSnippet(id int) (*Snippet, error) {
 func (db *Database) LatestSnippets() (Snippets, error) {
 	// Query statement
 	stmt := `SELECT id, title, content, created, expires FROM snippets
-	WHERE expires > UTC_TIMESTAMP() ORDER BY created DESC LIMIT 10`
+	WHERE expires > timezone('utc', now()) ORDER BY created DESC LIMIT 10`
 
 	// Execute query
 	rows, err := db.Query(stmt)
@@ -64,21 +64,16 @@ func (db *Database) LatestSnippets() (Snippets, error) {
 }
 
 func (db *Database) InsertSnippet(title, content, expires string) (int, error) {
+	// Save stored snippet
+	var userid int
+
 	// Query statement
-	stmt := `INSERT INTO snippets (title, content, created, expires)
-	VALUES(?, ?, UTC_TIMESTAMP(), DATE_ADD(UTC_TIMESTAMP(), INTERVAL ? SECOND))`
+	stmt := `INSERT INTO snippets (title, content, created, expires) VALUES ($1, $2, timezone('utc', now()), timezone('utc', now()) + interval '3600' second) RETURNING id`
 
-	// _, err
-	result, err := db.Exec(stmt, title, content, expires)
+	err := db.QueryRow(stmt, title, content, expires).Scan(&userid)
 	if err != nil {
 		return 0, err
 	}
 
-	// Will need to remove when move to POSTGRESql
-	id, err := result.LastInsertId()
-	if err != nil {
-		return 0, err
-	}
-
-	return int(id), nil
+	return userid, nil
 }

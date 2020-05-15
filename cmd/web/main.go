@@ -10,7 +10,7 @@ import (
 	"snippetbox.org/pkg/models"
 
 	"github.com/alexedwards/scs"
-	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 var sessionManager *scs.SessionManager
@@ -20,7 +20,7 @@ func main() {
 	addr := flag.String("addr", ":4000", "HTTP network address")
 	htmlDir := flag.String("html-dir", "./ui/html", "Path to HTML templates")
 	staticDir := flag.String("static-dir", "./ui/static", "Path to static assets")
-	dsn := flag.String("dsn", "sbx:redpong13@/snippetbox?parseTime=true", "MySQL DSN")
+	dsn := flag.String("dsn", "postgres://", "Postgres DSN")
 
 	flag.Parse()
 
@@ -48,11 +48,13 @@ func main() {
 }
 
 func connect(dsn string) *sql.DB {
-	db, err := sql.Open("mysql", dsn)
+	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
-	if err := db.Ping(); err != nil {
+
+	err = db.Ping()
+	if err != nil {
 		log.Fatal(err)
 	}
 
