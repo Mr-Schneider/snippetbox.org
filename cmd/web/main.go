@@ -5,15 +5,15 @@ import (
 	"flag"
 	"log"
 	"net/http"
-	"time"
+	"os"
 
 	"snippetbox.org/pkg/models"
 
-	"github.com/alexedwards/scs"
+	"github.com/gorilla/sessions"
 	_ "github.com/lib/pq"
 )
 
-var sessionManager *scs.SessionManager
+var sessionStore *sessions.CookieStore
 
 func main() {
 	// Flags
@@ -29,30 +29,31 @@ func main() {
 	defer db.Close()
 
 	// Initalize session manager
-	sessionManager = scs.New()
-	sessionManager.Lifetime = 6 * time.Hour
-	//sessionManager.Persist(true)
+	sessionStore = sessions.NewCookieStore([]byte(os.Getenv("SESSION_KEY")))
 
+	// Application instance
 	app := &App{
-		HTMLDir: *htmlDir,
+		HTMLDir:   *htmlDir,
 		StaticDir: *staticDir,
-		Database: &models.Database{db},
-		Sessions: sessionManager,
+		Database:  &models.Database{db},
+		Sessions:  sessionStore,
 	}
 
 	//Start server, quit on failure
 	log.Printf("Starting server on %s", *addr)
-
-	err := http.ListenAndServe(*addr, LogRequest(SecureHeaders(sessionManager.LoadAndSave(app.Routes()))))
+	err := http.ListenAndServe(*addr, LogRequest(SecureHeaders(app.Routes())))
 	log.Fatal(err)
 }
 
+// connect DB connection setup
 func connect(dsn string) *sql.DB {
+	// Postgres
 	db, err := sql.Open("postgres", dsn)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	// Test connection
 	err = db.Ping()
 	if err != nil {
 		log.Fatal(err)

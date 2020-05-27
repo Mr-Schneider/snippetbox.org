@@ -5,6 +5,7 @@ import (
 	"net/http"
 )
 
+// LogRequest logs every request on the server
 func LogRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := `%s - "%s %s %s"`
@@ -14,6 +15,7 @@ func LogRequest(next http.Handler) http.Handler {
 	})
 }
 
+// SecureHeaders sets secure headers on every request
 func SecureHeaders(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("X-Content-Type-Options", "nosniff")

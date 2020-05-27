@@ -1,13 +1,14 @@
 package main
 
 import (
+	"github.com/gorilla/sessions"
 	"snippetbox.org/pkg/models"
-	"github.com/alexedwards/scs"
 )
 
+// App structure
 type App struct {
-	HTMLDir string
+	HTMLDir   string
 	StaticDir string
-	Database *models.Database
-	Sessions *scs.SessionManager
+	Database  *models.Database
+	Sessions  *sessions.CookieStore
 }

@@ -5,14 +5,15 @@ import (
 	"unicode/utf8"
 )
 
+// NewSnippet models the snippet structure
 type NewSnippet struct {
-	Title		string
-	Content 	string
-	Expires 	string
-	Failures 	map[string]string
+	Title    string
+	Content  string
+	Expires  string
+	Failures map[string]string
 }
 
-// Validate the fields
+// Valid makes sure the the fields are correctly formatted
 func (f *NewSnippet) Valid() bool {
 	f.Failures = make(map[string]string)
 

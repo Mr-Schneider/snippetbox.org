@@ -4,10 +4,12 @@ import (
 	"database/sql"
 )
 
+// Database holds the db connection
 type Database struct {
 	*sql.DB
 }
 
+// GetSnippet retrives a snippet from the db
 func (db *Database) GetSnippet(id int) (*Snippet, error) {
 	// Query statement
 	stmt := `SELECT id, title, content, created, expires FROM snippets
@@ -28,6 +30,7 @@ func (db *Database) GetSnippet(id int) (*Snippet, error) {
 	return s, nil
 }
 
+// LatestSnippets grabs the latest 10 valid snippets
 func (db *Database) LatestSnippets() (Snippets, error) {
 	// Query statement
 	stmt := `SELECT id, title, content, created, expires FROM snippets
@@ -63,6 +66,7 @@ func (db *Database) LatestSnippets() (Snippets, error) {
 	return snippets, nil
 }
 
+// InsertSnippet adds a new snippet to the db
 func (db *Database) InsertSnippet(title, content, expires string) (int, error) {
 	// Save stored snippet
 	var userid int
@@ -70,7 +74,7 @@ func (db *Database) InsertSnippet(title, content, expires string) (int, error) {
 	// Query statement
 	stmt := `INSERT INTO snippets (title, content, created, expires) VALUES ($1, $2, timezone('utc', now()), timezone('utc', now()) + interval '3600' second) RETURNING id`
 
-	err := db.QueryRow(stmt, title, content, expires).Scan(&userid)
+	err := db.QueryRow(stmt, title, content).Scan(&userid)
 	if err != nil {
 		return 0, err
 	}

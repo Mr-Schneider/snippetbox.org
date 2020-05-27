@@ -2,18 +2,21 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/gorilla/mux"
 )
 
-func (app *App) Routes() *http.ServeMux {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.Home)
-	mux.HandleFunc("/snippet", app.ShowSnippet)
-	mux.HandleFunc("/snippet/new", app.NewSnippet)
-	mux.HandleFunc("/snippet/add", app.CreateSnippet)
-	
+// Routes defines site routes
+func (app *App) Routes() *mux.Router {
+	r := mux.NewRouter()
+	r.HandleFunc("/", app.Home).Methods("GET")
+	r.HandleFunc("/snippet/new", app.NewSnippet).Methods("GET")
+	r.HandleFunc("/snippet/new", app.CreateSnippet).Methods("POST")
+	r.HandleFunc("/snippet/{id}", app.ShowSnippet).Methods("GET")
 
+	// Fileserver for css and js files
 	fileServer := http.FileServer(http.Dir(app.StaticDir))
-	mux.Handle("/static/", http.StripPrefix("/static", fileServer))
+	r.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fileServer))
 
-	return mux
+	return r
 }

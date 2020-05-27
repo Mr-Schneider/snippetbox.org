@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+
+	"github.com/gorilla/mux"
 	"snippetbox.org/pkg/forms"
 )
 
+// Home page of site
 func (app *App) Home(w http.ResponseWriter, r *http.Request) {
 	// 404 if not truly root
 	if r.URL.Path != "/" {
@@ -24,12 +27,17 @@ func (app *App) Home(w http.ResponseWriter, r *http.Request) {
 	app.RenderHTML(w, r, "home.page.html", &HTMLData{
 		Snippets: snippets,
 	})
-	//w.Write([]byte("Hello from Snippetbox"))
 }
 
+// ShowSnippet displays a single snippet
 func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
+	// Load session
+	session, _ := app.Sessions.Get(r, "session-name")
+
 	// Get requested snippet id
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
+	vars := mux.Vars(r)
+	id, err := strconv.Atoi(vars["id"])
+
 	if err != nil || id < 1 {
 		app.NotFound(w)
 		return
@@ -46,26 +54,39 @@ func (app *App) ShowSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check for messages
-	flash := app.Sessions.PopString(r.Context(), "flash")
+	// Get the previous flashes, if any.
+	if flashes := session.Flashes("default"); len(flashes) > 0 {
+		// Save session
+		err = session.Save(r, w)
+		if err != nil {
+			app.ServerError(w, err)
+			return
+		}
 
-	// Return requested snippet
-	app.RenderHTML(w, r, "show.page.html", &HTMLData{
-		Snippet: snippet,
-		Flash: flash,
-	})
-	//fmt.Fprint(w, snippet)
-	//w.Write([]byte("Display a specific snippet..."))
+		app.RenderHTML(w, r, "show.page.html", &HTMLData{
+			Snippet: snippet,
+			Flash:   fmt.Sprintf("%v", flashes[0]),
+		})
+	} else {
+		app.RenderHTML(w, r, "show.page.html", &HTMLData{
+			Snippet: snippet,
+			Flash:   "",
+		})
+	}
 }
 
+// NewSnippet displays the new snippet form
 func (app *App) NewSnippet(w http.ResponseWriter, r *http.Request) {
 	app.RenderHTML(w, r, "new.page.html", &HTMLData{
-		Form : &forms.NewSnippet{},
+		Form: &forms.NewSnippet{},
 	})
-	//w.Write([]byte("Display the new snippet form..."))
 }
 
+// CreateSnippet creates a new snippet
 func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
+	// Load session
+	session, _ := app.Sessions.Get(r, "session-name")
+
 	// Parse the post data
 	err := r.ParseForm()
 	if err != nil {
@@ -73,8 +94,9 @@ func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Model the new snippet based on html form
 	form := &forms.NewSnippet{
-		Title: r.PostForm.Get("title"),
+		Title:   r.PostForm.Get("title"),
 		Content: r.PostForm.Get("content"),
 		Expires: r.PostForm.Get("expires"),
 	}
@@ -93,8 +115,14 @@ func (app *App) CreateSnippet(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save success message
-	app.Sessions.Put(r.Context(), "flash", "Your snippet was saved successfully!")
+	session.AddFlash("Your snippet was saved successfully!", "default")
 
-	http.Redirect(w, r, fmt.Sprintf("/snippet?id=%d", id), http.StatusSeeOther)
-	//w.Write([]byte("Create a new snippet..."))
+	// Save session
+	err = session.Save(r, w)
+	if err != nil {
+		app.ServerError(w, err)
+		return
+	}
+
+	http.Redirect(w, r, fmt.Sprintf("/snippet/%d", id), http.StatusSeeOther)
 }
